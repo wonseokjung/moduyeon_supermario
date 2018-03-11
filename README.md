@@ -1,10 +1,22 @@
 
+---
+title: "강화학습을 이용한 인공지능 슈퍼마리오 만들기"
+date: 2018-03-11 10:26:28 -0400
+categories: RL_code update
+use_math : true
+---
+
+
 # 강화학습을 이용한 인공지능 슈퍼마리오 만들기 
 
 ### 모두의연구소 flipped school 슈퍼마리오 대회편 
 
 
+
+
 ![image7](https://user-images.githubusercontent.com/11300712/37243439-a071562c-24bc-11e8-989b-4d55522b3bcf.jpg)
+
+
 
 
 소개 
@@ -77,8 +89,11 @@ _ _ _
 5. 슈퍼마리오 훈련
 5.1 openAI 함수 설명
 5.2 슈퍼마리오의 action
+5.3 코드 설명
 
 6. 대회규칙
+
+
 
 
 
@@ -137,8 +152,9 @@ Environment는 agent의 action에 응답해 그에 맞는 새로운 상황과 re
 바로 앞에서 받을수 있는 reward를 최대화 시키는 것이 아닌 long run에서의 축척된 reward를 최대화시키는 것 입니다.
 그럼 reward를 최대화 시키기 위해 그 환경에 맞는 적절한 학습 알고리즘을  사용하여야 합니다. 
 
+Tensorflow 라이브러리를 사용하였습니다. 
 
-
+딥러닝 모델은 vgg를 사용하였고, 
 
 ### 1.4. 프로그래밍 언어 
 
@@ -376,24 +392,305 @@ gym & super mario 환경 설치
 gym-0.9.4 설치
 (gym이 이미 깔려있는 경우..)
 `pip3 uninstall gym` 
-pip3 install gym==0.9.4  
+`pip3 install gym==0.9.4 ` 
 
-## baseline 설치
-$ pip3 install baselines
+baseline 설치
+`pip3 install baselines`
 
-## Super Mario Gym 환경 설치 
-$ git clone https://github.com/ppaquette/gym-super-mario.git
-$ cd gym-super-mario/
-$ pip3 install -e .
+Super Mario Gym 환경 설치 
+`git clone https://github.com/ppaquette/gym-super-mario.git`
+`cd gym-super-mario/`
+`pip3 install -e .`
 
-## Super Mario Gym 환경 불러오기
-$ python3 -V
+Super Mario Gym 환경 불러오기
+
+`python3 -V`
 Python 3.5.2
 
-$ python3
->> import gym
->> import ppaquette_gym_super_mario
->> env = gym.make('ppaquette/SuperMarioBros-1-1-v0')
->> env.reset() 
->> env.close()
+`python3`
+`import gym`
+`import ppaquette_gym_super_mario`
+`env = gym.make('ppaquette/SuperMarioBros-1-1-v0')`
+`env.reset() `
+`env.close()`
+
+
+## 5. 슈퍼마리오 훈련
+
+### 5.1 슈퍼마리오에서의 openAI 함수 사용법
+
+* `env=gym.make('ppaquette/meta-SuperMarioBros-v0')`
+
+gym의 make함수를 사용하여 슈퍼마리오 환경을 불러옵니다. 
+
+
+* `env.reset()`
+
+env.reset()을 통하여 emulator인 fceux가 실행됩니다.
+
+마리오가 죽으면 게임이 종료되고 게임을 시작하면 일정시간 내에 목표지점인 깃발까지 도착해야 합니다.
+
+총 reward는 목표까지의 X측의 거리 입니다. (깃발까지 가깝게 가면 갈수록 더 많은 reward를 받습니다.)
+
+
+* `env.step()`
+
+env.step() 함수를 통하여 마리오가 action을 선택하면
+
+`env.step(action)`
+
+obs, reward, is_finished, info 의 값을 받습니다.
+
+obs : 그 action을 선택하여 받은 관찰값 입니다.
+
+reward: 그 action을 선택하여 받은 보상값
+
+is_finished : 마리오가 죽었는지 아닌지에 대한 정보입니다.
+
+* info
+
+distance : 마리오가 X축으로 이동한 거리
+
+life : 마리오가 현재 가지고 있는 생명의 횟수
+
+score : 현재 스코어
+
+coins : 현재 가지고 있는 코인의 갯수
+
+time : 현재 남은 시간의 정보
+
+
+
+
+player_status : 작은마리오일때 -> 0 , 큰 마리오일때 ->1, 불꽃을 쏘는 마리오일때 ->2 의 값을 가지고있습니다.
+
+* 	`env.action_space.sample()`
+
+임의의 action을 선택합니다. 
+
+* `env.observation_space` 
+
+현재 state의 이미지 사이즈를 출력합니다. 
+
+
+### 5.2 슈퍼마리오의 action
+
+마리오는 다음과 같은 배열로 action을 인식합니다.
+Up, Left, Down, Right, A, B
+
+아무 action도 선택하지 않는 상태 : [0,0,0,0,0,0]
+
+위로가는(방향키 위)버튼을 선택한다 : [1,0,0,0,0,0]
+
+왼쪽으로 가는 action을 선택한다. : [0,1,0,0,0,0]
+
+아래로 가는 action을 선택한다. : [0,0,1,0,0,0]
+
+오른쪽으로 가는 action을 선택한다 : [0,0,0,1,0,0]
+
+점프를 하는 action을 선택한다(A버튼) : [0,0,0,0,1,0]
+
+버튼을 눌러 불꽃을 쏘는 action을 선택한다(B버튼): [0,0,0,0,0,1]
+
+action = [0, 0, 0, 1, 1, 0] # [up, left, down, right, A, B]
+
+이렇게 두개 버튼을 같이 선택한다면 4번째( 오른쪽 ) 와 5번째( 점프 )의 action을 같이 할것입니다.
+
+이와같이 6가지 action을 선택하며 환경을 통해 reward를 받습니다.
+
+
+
+### 5.3 코드 설명
+
+* 환경 불러오기
+* 
+```
+import gym
+import ppaquette_gym_super_mario
+env = gym.make('ppaquette/meta-SuperMarioBros-v0')
+```
+슈퍼마리오 환경을 임포트 합니다.
+gym의 함수인 make 함수를 사용하여 위에서 불러온 환경을 현재 환경으로 지정합니다.
+
+* 여러가지 레벨
+
+ppaquette의 슈퍼마리오는
+
+총 32개 레벨의 마리오 환경을 제공하며 우리는 'ppaquette/meta-SuperMarioBros-v0'환경으로
+학습을 하도록 하겠습니다.
+
+meta-SuperMarioBros-v0 : 
+
+레벨 클리어시 자동으로 다음 레벨로 넘어갑니다. 
+
+ppaquette/SuperMarioBros-1-1-v0:
+
+레벨1 클리어하더라도 다시 레벨1로 리셋됩니다. 
+
+ppaquette/SuperMarioBros-1-1-Tiles-v0:
+
+Tiles이 붙은 환경은 이미지의 사이즈가 13 x 16 x 1로 일반 환경에 비해 매우 작습니다. 
+
+아래의 64개의 환경중 원하는 환경을 쓰시면 됩니다!
+
+ppaquette/meta-SuperMarioBros-v0
+ppaquette/meta-SuperMarioBros-Tiles-v0
+ppaquette/SuperMarioBros-1-1-v0
+ppaquette/SuperMarioBros-1-2-v0
+ppaquette/SuperMarioBros-1-3-v0
+ppaquette/SuperMarioBros-1-4-v0
+ppaquette/SuperMarioBros-2-1-v0
+ppaquette/SuperMarioBros-2-2-v0
+ppaquette/SuperMarioBros-2-3-v0
+ppaquette/SuperMarioBros-2-4-v0
+ppaquette/SuperMarioBros-3-1-v0
+ppaquette/SuperMarioBros-3-2-v0
+ppaquette/SuperMarioBros-3-3-v0
+ppaquette/SuperMarioBros-3-4-v0
+ppaquette/SuperMarioBros-4-1-v0
+ppaquette/SuperMarioBros-4-2-v0
+ppaquette/SuperMarioBros-4-3-v0
+ppaquette/SuperMarioBros-4-4-v0
+ppaquette/SuperMarioBros-5-1-v0
+ppaquette/SuperMarioBros-5-2-v0
+ppaquette/SuperMarioBros-5-3-v0
+ppaquette/SuperMarioBros-5-4-v0
+ppaquette/SuperMarioBros-6-1-v0
+ppaquette/SuperMarioBros-6-2-v0
+ppaquette/SuperMarioBros-6-3-v0
+ppaquette/SuperMarioBros-6-4-v0
+ppaquette/SuperMarioBros-7-1-v0
+ppaquette/SuperMarioBros-7-2-v0
+ppaquette/SuperMarioBros-7-3-v0
+ppaquette/SuperMarioBros-7-4-v0
+ppaquette/SuperMarioBros-8-1-v0
+ppaquette/SuperMarioBros-8-2-v0
+ppaquette/SuperMarioBros-8-3-v0
+ppaquette/SuperMarioBros-8-4-v0
+ppaquette/SuperMarioBros-1-1-Tiles-v0
+ppaquette/SuperMarioBros-1-2-Tiles-v0
+ppaquette/SuperMarioBros-1-3-Tiles-v0
+ppaquette/SuperMarioBros-1-4-Tiles-v0
+ppaquette/SuperMarioBros-2-1-Tiles-v0
+ppaquette/SuperMarioBros-2-2-Tiles-v0
+ppaquette/SuperMarioBros-2-3-Tiles-v0
+ppaquette/SuperMarioBros-2-4-Tiles-v0
+ppaquette/SuperMarioBros-3-1-Tiles-v0
+ppaquette/SuperMarioBros-3-2-Tiles-v0
+ppaquette/SuperMarioBros-3-3-Tiles-v0
+ppaquette/SuperMarioBros-3-4-Tiles-v0
+ppaquette/SuperMarioBros-4-1-Tiles-v0
+ppaquette/SuperMarioBros-4-2-Tiles-v0
+ppaquette/SuperMarioBros-4-3-Tiles-v0
+ppaquette/SuperMarioBros-4-4-Tiles-v0
+ppaquette/SuperMarioBros-5-1-Tiles-v0
+ppaquette/SuperMarioBros-5-2-Tiles-v0
+ppaquette/SuperMarioBros-5-3-Tiles-v0
+ppaquette/SuperMarioBros-5-4-Tiles-v0
+ppaquette/SuperMarioBros-6-1-Tiles-v0
+ppaquette/SuperMarioBros-6-2-Tiles-v0
+ppaquette/SuperMarioBros-6-3-Tiles-v0
+ppaquette/SuperMarioBros-6-4-Tiles-v0
+ppaquette/SuperMarioBros-7-1-Tiles-v0
+ppaquette/SuperMarioBros-7-2-Tiles-v0
+ppaquette/SuperMarioBros-7-3-Tiles-v0
+ppaquette/SuperMarioBros-7-4-Tiles-v0
+ppaquette/SuperMarioBros-8-1-Tiles-v0
+ppaquette/SuperMarioBros-8-2-Tiles-v0
+ppaquette/SuperMarioBros-8-3-Tiles-v0
+ppaquette/SuperMarioBros-8-4-Tiles-v0
+
+
+
+* 4장의 화면을 붙여 마리오게 적과 함정 
+
+슈퍼마리오는 화면을 보고 적의 위치와 함정등의 정보를 받아옵니다.
+
+만약 슈퍼마리오에게 화면이 멈춰진 한장면만 주어진다면, 적이 오는 것을 판단하기가 힘들것 입니다.
+
+그래서 멈춰진 화면 4개를 연속적으로 주어 마리오에게 적의 위치와 움직이는 방향을 판단할수 있게 해줘야합니다!
+
+```
+obs=env.reset()
+print(obs)
+reshape_obs=np.reshape([obs],(1,84,84,1))
+history=np.stack((obs,obs,obs,obs), axis = 2)
+history = np.reshape([history], (1, 84, 84, 4))
+history=np.append(reshape_obs, history[:,:,:,:3], axis=3)
+processed_obs=np.reshape([history],(84,84,4))
+```
+
+* 마리오가 E-epsilon 행동을 하게 만들기
+* 
+greedy 한 action 을 선택하게 해주는 함수를 만들어 줍니다.
+
+numpy의 np.random.rand()함수를 통해 epsilon 값보다 적은 값이 나올땐 0 부터 5까지의 임의의 값을 리턴해주고,
+
+epsilone 보다 큰 값이 나왔을때는 keras.predict q value 의 값을 가장 크게 만드는 action을 리턴하게 합니다.
+```
+epsilon=0.9
+action_size=6
+
+import random
+
+def get_action(history):
+        history = np.float32(history / 255.0)
+        if np.random.rand() <= epsilon:
+            return random.randrange(action_size)
+        else:
+            q_value = model.predict(history)
+            return np.argmax(q_value[0])
+
+action=get_action(history)
+            
+```
+            
+
+* 임의의 임의의 action을 선택하는 mario 만들기
+
+임의의 action을 선택하는 
+
+## 6. 대회규칙
+
+슈퍼마리오는 총 0레벨부터 31 레벨까지 있고,  
+
+대회의 목표는 각 레벨의 끝에 있는 깃발을 잡는것이 목표입니다. 
+
+게임의 score( 코인, 적을 제거 등 )은 고려하지 않으며, x축으로의 이동거리로 승부를 결정합니다.
+
+만약 레벨1을 클리어하는 마리오가 두개 이상 발생한다면, 이어서 다음레벨에서의 X축의 이동거리로 승부를 결정합니다.
+
+레벨 클리어시 다음 레벨로 자동으로 넘어갈 수 있게, 
+환경은 ppaquette/meta-SuperMarioBros-v0를 사용해주세요. 
+
+학습 알고리즘과 딥러닝 모델의 선택은 개인자유입니다. 
+
+
+
+
+
+### 예제코드 
+
+* Keras 
+[DQN, Keras model](https://github.com/wonseokjung/moduyeon_supermario/tree/master/keras_model)
+
+Keras를 이용하여 슈퍼마리오를 학습하였습니다.
+
+Jupyter notebook을 이용한, 코드 설명이 포함되어 있습니다. 
+* Tensorflow
+[DQN, Tensorflow, Episode 5900](https://github.com/wonseokjung/moduyeon_supermario/tree/master/tensorflow)
+
+위의 github링크에 DQN을 사용하여 슈퍼마리오를 훈련시킨 코드를 올려놓았습니다. 
+저장되어 있는 모델을 리스토어하시면, 슈퍼마리오가 5900정도의 에피소드를 훈련하였을때 어떤 action을 선택하는지 체험하실수 있습니다. 
+장종성님의 도움을 받았습니다. 
+
+
+
+
+### References
+
+https://github.com/wonseokjung/moduyeon_supermario/tree/master/tensorflow
+
+
+https://wonseokjung.github.io//rl_paper/update/RL-PP-DQN/
 
