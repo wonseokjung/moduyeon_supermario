@@ -21,7 +21,7 @@ checkpoint_dir = './wonseok_checkpoint_level2/'  #
 train = True	
 retrain = True
 
-env = gym.make('ppaquette/SuperMarioBros-1-1-v0')
+env = gym.make('ppaquette/SuperMarioBros-1-2-v0')
 env = wrappers.Monitor(env, 'gym-results', force=True)
 
 # Constants defining our neural network
